@@ -32,11 +32,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # Delete the specific folders and binary to ensure a clean slate
-            # We use -f to ignore errors if the files don't exist yet
-            rm -rf ${{ secrets.TARGET_DIR }}
-            # Re-create the directory structure so SCP doesn't fail
-            mkdir -p ${{ secrets.TARGET_DIR }}
+            rm -rf ${{ secrets.TARGET_DIR }}/*
 
       - name: Deploy to Server
         uses: appleboy/scp-action@master
@@ -46,7 +42,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "build/web/*"
           target: ${{ secrets.TARGET_DIR }}
-          strip_file_prefix: true
+          strip_components: 2
 
       - name: Set Permissions
         uses: appleboy/ssh-action@master
