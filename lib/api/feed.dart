@@ -39,23 +39,23 @@ class ApiFeed {
       for (dynamic item in jsonData) {
         try {
           yield Post.fromJson(item);
-        } catch (_) {
-          throw Exception('Invalid response');
+        } catch (e) {
+          throw Exception('Failed to parse post data: $e');
         }
       }
 
       return;
     } else if (response.statusCode == HttpStatus.forbidden) {
-      throw Exception('Unauthorised');
+      throw Exception('Unauthorized: Unable to fetch feed');
     }
 
-    throw Exception('Unexpected error');
+    throw Exception('Failed to fetch feed: ${response.statusCode} - ${response.body}');
   }
 
   Future<void> postPost(
       String fellowshipId, String heading, String article) async {
     if (fellowshipId.isEmpty || heading.isEmpty || article.isEmpty) {
-      throw Exception('Invalid data');
+      throw Exception('Invalid post data: fellowshipId, heading, and article are required');
     }
 
     Map<String, dynamic> data = {
@@ -76,9 +76,9 @@ class ApiFeed {
     if (response.statusCode == HttpStatus.ok) {
       return;
     } else if (response.statusCode == HttpStatus.forbidden) {
-      throw Exception('Unauthorised');
+      throw Exception('Unauthorized: Unable to post to feed');
     }
 
-    throw Exception('Unexpected error');
+    throw Exception('Failed to post to feed: ${response.statusCode} - ${response.body}');
   }
 }

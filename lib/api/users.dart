@@ -11,7 +11,7 @@ class ApiUsers {
 
   ApiUsers(String authToken) : _authToken = authToken;
 
-  Future<Map<String, String>> signIn(String accountId, String password) async {
+  Future<Map<String, dynamic>> signIn(String accountId, String password) async {
     String userPass = base64Encode(utf8.encode('$accountId:$password'));
     String basicAuth = 'Basic $userPass';
 
@@ -26,13 +26,13 @@ class ApiUsers {
     if (response.statusCode == HttpStatus.ok) {
       return json.decode(response.body);
     } else if (response.statusCode == HttpStatus.forbidden) {
-      throw Exception('Authentication failed');
+      throw Exception('Authentication failed: Invalid credentials');
     }
 
-    throw Exception('Unexpected error');
+    throw Exception('Sign in failed with status code ${response.statusCode}');
   }
 
-  Future<Map<String, String>> authenticate(
+  Future<Map<String, dynamic>> authenticate(
       SignInType signInType, String accountId, String? password) async {
     String body = json.encode({
       'signInType': signInType,
@@ -49,10 +49,10 @@ class ApiUsers {
     if (response.statusCode == HttpStatus.ok) {
       return json.decode(response.body);
     } else if (response.statusCode == HttpStatus.forbidden) {
-      throw Exception('Authentication failed');
+      throw Exception('Authentication failed: Invalid credentials');
     }
 
-    throw Exception('Unexpected error');
+    throw Exception('Authentication failed with status code ${response.statusCode}');
   }
 
   Future<bool> signup(String displayName, String email, String password) async {
@@ -72,7 +72,8 @@ class ApiUsers {
       json.decode(response.body);
       return true;
     } else if (response.statusCode == HttpStatus.forbidden) {
-      throw Exception(json.decode(response.body).toString());
+      final errorBody = json.decode(response.body).toString();
+      throw Exception('Registration failed: $errorBody');
     }
 
     return false;

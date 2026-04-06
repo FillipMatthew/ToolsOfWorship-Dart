@@ -19,7 +19,7 @@ class _LoginPageState extends State<LoginPage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final _formKey = GlobalKey<FormState>();
   bool _visiblePassword = false;
-  // String? _error;
+  bool _isLoading = false;
   String? _email;
   String? _password;
 
@@ -27,7 +27,6 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      // Body section
       body: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           if (constraints.maxWidth > 600.0) {
@@ -68,14 +67,6 @@ class _LoginPageState extends State<LoginPage> {
                   style: Theme.of(context).textTheme.headlineLarge,
                 ),
               ),
-              // if (_error != null && _error!.isNotEmpty)
-              //   Padding(
-              //     padding: const EdgeInsets.all(defaultPadding),
-              //     child: Text(
-              //       _error!,
-              //       style: TextStyle(color: Theme.of(context).errorColor),
-              //     ),
-              //   ),
               Form(
                 key: _formKey,
                 child: _content(),
@@ -96,6 +87,7 @@ class _LoginPageState extends State<LoginPage> {
         Padding(
           padding: const EdgeInsets.all(defaultPadding),
           child: TextFormField(
+            enabled: !_isLoading,
             keyboardType: TextInputType.emailAddress,
             validator: _emailValidator,
             textInputAction: TextInputAction.next,
@@ -104,7 +96,6 @@ class _LoginPageState extends State<LoginPage> {
             },
             decoration: const InputDecoration(
               border: UnderlineInputBorder(),
-              //labelText: 'Email',
               hintText: 'Enter email address',
             ),
           ),
@@ -112,6 +103,7 @@ class _LoginPageState extends State<LoginPage> {
         Padding(
           padding: const EdgeInsets.all(defaultPadding),
           child: TextFormField(
+            enabled: !_isLoading,
             obscureText: !_visiblePassword,
             keyboardType: TextInputType.visiblePassword,
             validator: _validatePassword,
@@ -121,7 +113,6 @@ class _LoginPageState extends State<LoginPage> {
             },
             decoration: InputDecoration(
               border: const UnderlineInputBorder(),
-              //labelText: 'Password',
               hintText: 'Enter password',
               suffixIcon: InkWell(
                 onTap: () {
@@ -139,8 +130,14 @@ class _LoginPageState extends State<LoginPage> {
         Padding(
           padding: const EdgeInsets.all(defaultPadding),
           child: ElevatedButton(
-            onPressed: _onSignIn,
-            child: const Text('Sign In'),
+            onPressed: _isLoading ? null : _onSignIn,
+            child: _isLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Sign In'),
           ),
         ),
         const Padding(
@@ -151,7 +148,7 @@ class _LoginPageState extends State<LoginPage> {
           padding: const EdgeInsets.all(defaultPadding),
           child: SignInButton(
             buttonType: bDark ? ButtonType.googleDark : ButtonType.google,
-            onPressed: _signInWithGoogle,
+            onPressed: _isLoading ? null : _signInWithGoogle,
           ),
         ),
         Padding(
@@ -162,7 +159,7 @@ class _LoginPageState extends State<LoginPage> {
               Text('Don\'t have an account?',
                   style: Theme.of(context).textTheme.bodySmall),
               TextButton(
-                onPressed: _onSignup,
+                onPressed: _isLoading ? null : _onSignup,
                 style: ButtonStyle(
                   backgroundColor:
                       MaterialStateProperty.all(Colors.transparent),
@@ -179,25 +176,25 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _onSignIn() async {
     if (!_formKey.currentState!.validate()) {
-      // setState(() {
-      //   _error = 'Please provide a valid email/password combination';
-      // });
-    } else {
-      try {
-        context
-            .read<AccountAuthentication>()
-            .signIn(_email!, _password!)
-            .then((success) {
-          if (!success && context.mounted) {
-            showError(context, 'An error occured while signing in.');
-          }
-        });
-      } on Exception catch (e) {
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final success =
+          await context.read<AccountAuthentication>().signIn(_email!, _password!);
+      if (!success && mounted) {
+        showError(context, 'Invalid email or password.');
+      }
+    } catch (e) {
+      if (mounted) {
         showError(context, e.toString());
       }
-      // setState(() {
-      //   _error = '';
-      // });
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -207,17 +204,23 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _signInWithGoogle() async {
+    setState(() => _isLoading = true);
+
     try {
-      context
+      final success = await context
           .read<AccountAuthentication>()
-          .authenticateWithGoogleSignIn()
-          .then((sucess) {
-        if (!sucess && context.mounted) {
-          showError(context, 'An error occured while signing in.');
-        }
-      });
-    } on Exception catch (e) {
-      showError(context, e.toString());
+          .authenticateWithGoogleSignIn();
+      if (!success && mounted) {
+        showError(context, 'Google sign-in failed. Please try again.');
+      }
+    } catch (e) {
+      if (mounted) {
+        showError(context, e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

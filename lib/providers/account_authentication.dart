@@ -8,6 +8,7 @@ import '../types/sign_in_type.dart';
 class AccountAuthentication extends ChangeNotifier {
   String? _authToken;
   String? _displayName;
+  SignInType? _signInType;
 
   Future<bool> signInSilent() async {
     if (isSignedIn) {
@@ -50,9 +51,13 @@ class AccountAuthentication extends ChangeNotifier {
     const storage = FlutterSecureStorage();
     await storage.delete(key: 'signInToken');
 
-    // This honestly seems weird. We may not have signed in with Google.
-    GoogleSignInHelper helper = GoogleSignInHelper();
-    await helper.signOut();
+    // Only sign out from Google if the user signed in with Google
+    if (_signInType == SignInType.googleSignIn) {
+      GoogleSignInHelper helper = GoogleSignInHelper();
+      await helper.signOut();
+    }
+
+    _signInType = null;
     notifyListeners();
   }
 
@@ -64,7 +69,7 @@ class AccountAuthentication extends ChangeNotifier {
 
   Future<bool> _authenticate(
       SignInType signInType, String accountId, String? password) async {
-    Map<String, String> userData;
+    Map<String, dynamic> userData;
     if (signInType == SignInType.localUser) {
       userData = await ApiUsers(_authToken ?? '').signIn(accountId, password!);
     } else {
@@ -72,8 +77,9 @@ class AccountAuthentication extends ChangeNotifier {
           .authenticate(signInType, accountId, password);
     }
 
-    _authToken = userData['token'];
-    _displayName = userData['displayName'];
+    _authToken = userData['token'] as String?;
+    _displayName = userData['displayName'] as String?;
+    _signInType = signInType;
     notifyListeners();
     if (_authToken != null) {
       return true;

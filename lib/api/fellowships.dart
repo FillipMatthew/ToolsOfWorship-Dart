@@ -25,8 +25,8 @@ class ApiFellowships {
       for (Map<String, dynamic> item in jsonData) {
         try {
           yield Fellowship.fromJson(item);
-        } catch (_) {
-          throw Exception('Invalid response');
+        } catch (e) {
+          throw Exception('Failed to parse fellowship data: $e');
         }
       }
 
@@ -35,6 +35,6 @@ class ApiFellowships {
       throw Exception('Unauthorised');
     }
 
-    throw Exception('Unexpected error');
+    throw Exception('Failed to fetch fellowships: ${response.statusCode} - ${response.body}');
   }
 }

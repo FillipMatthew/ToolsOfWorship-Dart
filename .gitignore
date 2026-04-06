@@ -47,9 +47,3 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
-
-# Build scripts
-build.bat
-upgrade.bat
-push.bat
-swap_app.sh
